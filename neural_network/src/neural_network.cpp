@@ -50,12 +50,8 @@ void print_full_nn(NN *item) {
 	print_vector(item->output_layer, item->output_number);
 }
 
-void epoch(double *input, double *output) {
-
-}
-
 int main() {
-	int arr[] = { 3, 4, 3 };
+	int arr[] = { 3, 14, 3 };
 	double input[] = { 0.1, 0.9, 0.7 };
 	double output[] = { 0.9, 0.1, 0.6 };
 	NeuralStructure ns;

@@ -8,8 +8,6 @@
 #include "NeuralStructure.h"
 #include "../utils/MathUtils.h"
 
-#include<iostream>
-
 void NeuralStructure::create_layers(int *layers, int sz) {
 	if (sz < 2) {
 		throw "InvalidLayersException";
@@ -21,23 +19,18 @@ void NeuralStructure::create_layers(int *layers, int sz) {
 		temp->hook_next(layers[i]);
 		temp = temp->next;
 	}
-	this->last = temp->prev;
+	this->last = temp;
 }
 
-void NeuralStructure::traverse(NN first, void (*callback)(NN*)) {
+void NeuralStructure::traverse(NN first, void (*callback)(NN*), bool next) {
 	NN *temp = &first;
-	while (temp != NULL) {
+	while (temp != nullptr) {
 		callback(temp);
-		temp = temp->next;
-	}
-}
-
-void NeuralStructure::traverse_by_error(NN first,
-		void (*callback)(NN*, double*), double *error) {
-	NN *temp = &first;
-	while (temp != NULL) {
-		callback(temp, error);
-		temp = temp->next;
+		if (next) {
+			temp = temp->next;
+		} else {
+			temp = temp->prev;
+		}
 	}
 }
 
@@ -55,43 +48,41 @@ void NeuralStructure::forward(NN *item) {
 	}
 }
 
-double NeuralStructure::back_propagation_delta(NN *item, int index,
-		double *error) {
-	if (item == NULL) {
-		return (-1.0) * error[index];
-	}
-	double sigma = 0;
-	for (int i = 0; i < item->output_number; i++) {
-		sigma += item->weight_matrix[index][i]
-				* MathUtils::sigmoid(item->output_layer[i], true)
-				* NeuralStructure::back_propagation_delta(item->next, i, error);
-	}
-	return sigma;
-}
-
-void NeuralStructure::back_propagation(NN *item, double *error) {
-	for (int i = 0; i < item->input_number; i++) {
-		for (int j = 0; j < item->output_number; j++) {
-			item->weight_matrix[i][j] -= LEARNING_RATE * item->input_layer[i]
-					* MathUtils::sigmoid(item->output_layer[j], true)
-					* NeuralStructure::back_propagation_delta(item->next, j,
-							error);
-		}
-	}
-	//BIAS Case
-	for (int j = 0; j < item->output_number; j++) {
-		item->weight_matrix[item->input_number][j] -= LEARNING_RATE * item->BIAS
-				* MathUtils::sigmoid(item->output_layer[j], true)
-				* back_propagation_delta(item->next, j, error);
-	}
-}
-
 void NeuralStructure::initialize_weight_matrix(NN *item) {
 	for (int i = 0; i < item->input_number + 1; i++) {
 		for (int j = 0; j < item->output_number; j++) {
+			//TODO: choose better approach for initializing nets (random etc.)
 			item->weight_matrix[i][j] = 0.05;
 		}
 	}
+}
+
+void NeuralStructure::backward(NN *item) {
+	//clear sigma
+	for (int i = 0; i < item->input_number; i++) {
+		item->sigma[i] = 0.0;
+	}
+
+	for (int i = 0; i < item->input_number; i++) {
+		for (int j = 0; j < item->output_number; j++) {
+			item->sigma[i] += MathUtils::sigmoid(item->output_layer[j], true)
+					* item->weight_matrix[i][j] * item->next->sigma[j];
+		}
+	}
+
+	for (int i = 0; i < item->input_number; i++) {
+		for (int j = 0; j < item->output_number; j++) {
+			item->weight_matrix[i][j] -= LEARNING_RATE * item->input_layer[i]
+					* item->next->sigma[j];
+		}
+	}
+
+	// BIAS case
+	for (int i = 0; i < item->output_number; i++) {
+		item->weight_matrix[item->input_number][i] -= LEARNING_RATE * item->BIAS
+				* item->next->sigma[i];
+	}
+
 }
 
 void NeuralStructure::epoch(double *input, double *output) {
@@ -106,6 +97,29 @@ void NeuralStructure::epoch(double *input, double *output) {
 	for (int i = 0; i < last->output_number; i++) {
 		error[i] = output[i] - this->last->output_layer[i];
 	}
+	//Back Prop.
+	for (int i = 0; i < this->last->input_number; i++) {
+		for (int j = 0; j < this->last->output_number; j++) {
+			this->last->sigma[i] += MathUtils::sigmoid(
+					this->last->output_layer[j], true)
+					* this->last->weight_matrix[i][j] * (-1) * error[j];
+		}
+	}
+	if (this->last->prev != nullptr) {
+		NeuralStructure::traverse(*this->last->prev, backward, false);
+	}
 
-	NeuralStructure::traverse_by_error(*this->first, back_propagation, error);
+	for (int i = 0; i < this->last->input_number; i++) {
+		for (int j = 0; j < this->last->output_number; j++) {
+			this->last->weight_matrix[i][j] -= LEARNING_RATE
+					* this->last->input_layer[i] * (-1) * error[j];
+		}
+	}
+
+	// BIAS case
+	for (int i = 0; i < this->last->output_number; i++) {
+		this->last->weight_matrix[this->last->input_number][i] -= LEARNING_RATE
+				* this->last->BIAS * (-1) * error[i];
+	}
+
 }

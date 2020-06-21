@@ -7,7 +7,6 @@
 
 #ifndef UTILS_MEMORYUTILS_H_
 #define UTILS_MEMORYUTILS_H_
-#include <stdlib.h>
 
 class MemoryUtils {
 public:

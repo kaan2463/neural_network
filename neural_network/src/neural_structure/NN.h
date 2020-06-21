@@ -13,6 +13,7 @@ public:
 	const double BIAS = 1;
 	int input_number;
 	int output_number;
+	double *sigma; //sum of multiplication of derivatives for back prop.
 	double *input_layer;
 	double *net_input;
 	double *output_layer;

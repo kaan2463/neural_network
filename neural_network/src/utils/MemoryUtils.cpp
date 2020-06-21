@@ -6,6 +6,7 @@
  */
 
 #include "MemoryUtils.h"
+#include <stdlib.h>
 
 void MemoryUtils::allocate_double_matrix(double **&matrix, int m, int n) {
 	matrix = (double**) malloc(sizeof(double*) * m);

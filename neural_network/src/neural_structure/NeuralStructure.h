@@ -18,12 +18,9 @@ public:
 	NN *last = NULL;
 	void create_layers(int *layers, int sz);
 	static void initialize_weight_matrix(NN *item);
-	static void traverse(NN first, void (*callback)(NN*));
-	static void traverse_by_error(NN first, void (*callback)(NN*, double*),
-			double *error);
+	static void traverse(NN first, void (*callback)(NN*), bool next = true);
 	static void forward(NN *item);
-	static double back_propagation_delta(NN *item, int index, double *error);
-	static void back_propagation(NN *item, double *error);
+	static void backward(NN *item);
 	void epoch(double *input, double *output);
 };
 
